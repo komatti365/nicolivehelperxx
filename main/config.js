@@ -71,6 +71,11 @@ var Config = {
     'tweet-text': '再生中:{title} http://nico.ms/{id} #{id} http://nico.ms/{live-id}',
     'twitter-screen-name': 'なし',
 
+    /* Discord */
+    'discord-on-play': false,
+    'discord-webhook-url': '',
+    'discord-text': '再生中:{title} http://nico.ms/{id} #{id} http://nico.ms/{live-id}',
+
     'do-speech': false,
     'do-speech-caster-comment': false,
     'webspeech-select-voice': 0,

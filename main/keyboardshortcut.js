@@ -33,6 +33,9 @@ var KeyboardShortcut = {
                 let text = window.prompt( 'つぶやきを入力してください', defstring );
                 if( text ){
                     Twitter.updateStatus( text );
+                    if( Config['discord-on-play'] && Discord.webhookUrl ){
+                        Discord.updateStatus( text );
+                    }
                 }
                 ev.stopPropagation();
                 ev.preventDefault();

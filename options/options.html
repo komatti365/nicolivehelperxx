@@ -13,6 +13,7 @@
   <script src="../libs/sha1.js"></script>
   <script src="../libs/oauth.js"></script>
   <script src="../libs/twitter.js"></script>
+  <script src="../libs/discord.js"></script>
   <script src="../libs/utils.js"></script>
   <script src="../libs/webspeech.js"></script>
 
@@ -212,6 +213,24 @@
     </div>
     <div>
       <input id="tweet-text" type="text" placeholder="つぶやき内容" maxlength="140" style="width:100%;">
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Discord</legend>
+    <div>
+      <label for="discord-webhook-url">Webhook URL:</label>
+      <input id="discord-webhook-url" type="text" style="width:100%;" placeholder="https://discord.com/api/webhooks/...">
+    </div>
+    <div style="margin-top:0.5em;">
+      <label><input type="checkbox" id="discord-on-play">動画再生時に送信</label>
+    </div>
+    <div>
+      <input id="discord-text" type="text" placeholder="送信する内容" style="width:100%;">
+    </div>
+    <div style="margin-top:0.5em;">
+      <input id="txt-discord-test" type="text" placeholder="テストメッセージ" style="width:80%;">
+      <button id="btn-test-discord" type="button">送信テスト</button>
     </div>
   </fieldset>
 

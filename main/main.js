@@ -442,6 +442,10 @@ var NicoLiveHelper = {
                         let str = this.replaceMacros( Config['tweet-text'], this.currentVideo );
                         Twitter.updateStatus( str );
                     }
+                    if( typeof Discord !== 'undefined' && Config['discord-on-play'] && Discord.webhookUrl ){
+                        let str = this.replaceMacros( Config['discord-text'], this.currentVideo );
+                        Discord.updateStatus( str );
+                    }
                 }
                 resolve( true );
             };
@@ -2264,6 +2268,9 @@ var NicoLiveHelper = {
                 MergeSimpleObject( Config, changes.config.newValue );
                 console.log( Config );
                 Twitter.init(); // 認証トークンをConfigから読ませるために
+                if( typeof Discord !== 'undefined' ){
+                    Discord.init(); // webhook URLをConfigから読み込む
+                }
                 NicoLiveRequest.loadNGVideo();
                 this.updatePNameWhitelist();
             }
@@ -2294,6 +2301,9 @@ var NicoLiveHelper = {
         DB.initDB();
         Talker.init();
         Twitter.init();
+        if( typeof Discord !== 'undefined' ){
+            Discord.init();
+        }
         NicoLiveMylist.init();
         NicoLiveRequest.init();
         NicoLiveStock.init();

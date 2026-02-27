@@ -182,6 +182,32 @@ async function LoadOptions(){
         $( '#oauth-secret-token' ).val( result['oauth_token_secret'] );
     } );
 
+    /* Discord */
+    LoadBool( 'discord-on-play', config, Config['discord-on-play'] );
+    LoadValue( 'discord-text', config, Config['discord-text'] );
+    LoadValue( 'discord-webhook-url', config, '' );
+    // make sure the helper knows the current URL right away
+    if( config['discord-webhook-url'] ){
+        Discord.webhookUrl = config['discord-webhook-url'];
+    }
+
+    $( '#btn-test-discord' ).on( 'click', ( ev ) => {
+        // make sure a webhook URL has been entered before attempting to send
+        let url = $( '#discord-webhook-url' ).val().trim();
+        if( url === '' ){
+            alert( 'Discord のウェブフック URL が設定されていません。送信するには URL を入力してください。' );
+            return;
+        }
+        // update the Discord helper immediately so the test can use it
+        Discord.webhookUrl = url;
+        // also mirror it in the temporary config object so that SaveOptions will
+        // pick it up (but we don't persist here yet).
+        Config['discord-webhook-url'] = url;
+
+        let text = $( '#txt-discord-test' ).val();
+        Discord.updateStatus( text );
+    } );
+
 
     /* コメント読み上げ */
     LoadBool( 'do-speech', config, Config['do-speech'] );
@@ -258,6 +284,11 @@ function SaveOptions( ev ){
     SaveValue( 'tweet-text', config );
     SaveValue( 'oauth-token', config );
     SaveValue( 'oauth-secret-token', config );
+
+    /* Discord */
+    SaveBool( 'discord-on-play', config );
+    SaveValue( 'discord-webhook-url', config );
+    SaveValue( 'discord-text', config );
     config['twitter-screen-name'] = $( '#twitter-screen-name' ).text();
 
     /* コメント読み上げ */

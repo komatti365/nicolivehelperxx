@@ -226,10 +226,12 @@
       <label><input type="checkbox" id="discord-on-play">動画再生時に送信</label>
     </div>
     <div>
-      <input id="discord-text" type="text" placeholder="送信する内容" style="width:100%;">
+      <!-- テキスト欄を textarea に変更し、改行を入力できるようにする -->
+      <textarea id="discord-text" placeholder="送信する内容" style="width:100%;height:4em;resize:vertical;"></textarea>
     </div>
     <div style="margin-top:0.5em;">
-      <input id="txt-discord-test" type="text" placeholder="テストメッセージ" style="width:80%;">
+      <!-- テスト用も textarea にして改行確認ができるように -->
+      <textarea id="txt-discord-test" placeholder="テストメッセージ" style="width:80%;height:2em;resize:vertical;"></textarea>
       <button id="btn-test-discord" type="button">送信テスト</button>
     </div>
   </fieldset>

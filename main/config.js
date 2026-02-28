@@ -74,7 +74,9 @@ var Config = {
     /* Discord */
     'discord-on-play': false,
     'discord-webhook-url': '',
-    'discord-text': '再生中:{title} http://nico.ms/{id} #{id} http://nico.ms/{live-id}',
+    // Discord に送るメッセージ。オプション画面は複数行入力に対応しており、改行をそのまま送信できます。
+    // たとえば以下のように \n を入れておけば、実際には改行として扱われます。
+    'discord-text': '再生中:{title}\nhttp://nico.ms/{id} #{id} http://nico.ms/{live-id}',
 
     'do-speech': false,
     'do-speech-caster-comment': false,

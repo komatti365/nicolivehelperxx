@@ -339,7 +339,7 @@ var NicoApi = {
         let sort = options.sort || '-startTime';
         let limit = Math.min( Math.max( parseInt( options.limit ) || 10, 1 ), 100 );
         let context = options.context || 'NicoLiveHelperX';
-        let fields = 'contentId,title,description,tags,categoryTags,viewCounter,mylistCounter,commentCounter,startTime,thumbnailUrl,lengthSeconds';
+        let fields = options.fields || 'contentId,title,description,tags,categoryTags,viewCounter,mylistCounter,commentCounter,startTime,thumbnailUrl,lengthSeconds,userId';
 
         let params = [
             'q=' + encodeURIComponent( tag ),

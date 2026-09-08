@@ -30,6 +30,203 @@ var VideoDB = {
     },
 
     /**
+     * スナップショットAPIの検索結果アイテムを VideoInformation オブジェクトに変換
+     * @param {object} item 
+     * @returns {VideoInformation}
+     */
+    convertSnapshotItemToVideoInfo: function( item ){
+        let vinfo = (typeof VideoInformation !== 'undefined') ? new VideoInformation() : {};
+        vinfo.video_id = item.contentId;
+        vinfo.title = item.title || '';
+        vinfo.description = item.description || '';
+        vinfo.thumbnail_url = item.thumbnailUrl || '';
+        vinfo.user_id = item.userId ? String( item.userId ) : '';
+        vinfo.user_nickname = '';
+
+        let sec = parseInt( item.lengthSeconds ) || 0;
+        vinfo.length_ms = sec * 1000;
+        let m = parseInt( sec / 60 );
+        let s = sec % 60;
+        vinfo.length = `${m}:${s < 10 ? '0' + s : s}`;
+
+        vinfo.view_counter = parseInt( item.viewCounter ) || 0;
+        vinfo.comment_num = parseInt( item.commentCounter ) || 0;
+        vinfo.mylist_counter = parseInt( item.mylistCounter ) || 0;
+
+        let startTime = item.startTime ? new Date( item.startTime ).getTime() : Date.now();
+        vinfo.first_retrieve = parseInt( startTime / 1000 );
+
+        vinfo.tags = {};
+        vinfo.tags_array = [];
+        if( item.tags ){
+            let arr = item.tags.split( /\s+/ ).filter( t => t.length > 0 );
+            vinfo.tags_array = arr;
+            for( let t of arr ){
+                vinfo.tags[t] = 1;
+            }
+        }
+        vinfo.deleted = 0;
+        return vinfo;
+    },
+
+    /**
+     * スナップショット検索APIによる動画検索
+     */
+    searchSnapshot: function(){
+        let query = $( '#snapshot-query' ).val();
+        if( !query || query.trim().length === 0 ){
+            $( '#information' ).text( '検索キーワードまたはタグを入力してください' );
+            return;
+        }
+        query = query.trim();
+
+        let targets = $( '#snapshot-targets' ).val() || 'tagsExact';
+        let sort = $( '#snapshot-sort' ).val() || '-startTime';
+        let limit = parseInt( $( '#snapshot-limit' ).val() ) || 100;
+
+        $( '#information' ).text( `スナップショットAPIで「${query}」を検索中...` );
+        $( '#tbl-result' ).empty();
+
+        let options = {
+            targets: targets,
+            sort: sort,
+            limit: limit,
+            context: 'NicoLiveHelperX_VideoDB'
+        };
+
+        let self = this;
+        NicoApi.snapshotSearch( query, options, async function( xml, req ){
+            if( !req || req.status !== 200 ){
+                let status = req ? req.status : '通信エラー';
+                $( '#information' ).text( `スナップショットAPI検索に失敗しました (${status})` );
+                return;
+            }
+
+            try{
+                let res = JSON.parse( req.responseText );
+                if( !res || !res.meta || res.meta.status !== 200 || !Array.isArray( res.data ) ){
+                    let msg = (res && res.meta && res.meta.errorMessage) ? res.meta.errorMessage : '検索結果を取得できませんでした';
+                    $( '#information' ).text( `検索エラー: ${msg}` );
+                    return;
+                }
+
+                let items = res.data;
+                let videoList = [];
+                for( let item of items ){
+                    let vinfo = self.convertSnapshotItemToVideoInfo( item );
+                    videoList.push( vinfo );
+                }
+
+                // DBに既に登録されているか確認
+                let existingIds = new Set();
+                try{
+                    let ids = videoList.map( v => v.video_id );
+                    let found = await self.db.videodb.where( 'video_id' ).anyOf( ids ).toArray();
+                    for( let f of found ){
+                        existingIds.add( f.video_id );
+                    }
+                }catch( e ){
+                    console.error( 'Error checking existing videos in DB:', e );
+                }
+
+                // 自動追加が有効ならDBに追加
+                let autoAdd = $( '#chk-snapshot-auto-add-db' ).prop( 'checked' );
+                if( autoAdd && videoList.length > 0 ){
+                    try{
+                        await self.db.videodb.bulkPut( videoList );
+                        for( let v of videoList ){
+                            existingIds.add( v.video_id );
+                        }
+                    }catch( e ){
+                        console.error( 'Error auto adding to videodb:', e );
+                    }
+                }
+
+                // テーブルにレンダリング
+                $( '#tbl-result' ).empty();
+                for( let vinfo of videoList ){
+                    let elem = self.createListElement( vinfo );
+                    if( existingIds.has( vinfo.video_id ) ){
+                        let titleElem = elem.querySelector( '.video-title' );
+                        if( titleElem ){
+                            let badge = document.createElement( 'span' );
+                            badge.className = 'badge-db-exist';
+                            badge.textContent = 'DB済';
+                            titleElem.insertBefore( badge, titleElem.firstChild );
+                        }
+                    }
+                    $( '#tbl-result' ).append( elem );
+                }
+
+                self.search_result = videoList;
+                let countMsg = `${videoList.length}件見つかりました`;
+                if( autoAdd ){
+                    countMsg += ' (動画DBに追加・更新完了)';
+                }
+                $( '#information' ).text( countMsg );
+
+            }catch( e ){
+                console.error( 'Failed to parse snapshot response:', e );
+                $( '#information' ).text( '検索結果の解析に失敗しました' );
+            }
+        } );
+    },
+
+    /**
+     * スナップショット検索結果を動画DBに追加
+     * @param {boolean} selectedOnly 選択された行のみを追加するか
+     */
+    addSnapshotResultToDB: async function( selectedOnly = false ){
+        if( !this.search_result || this.search_result.length === 0 ){
+            $( '#information' ).text( '追加対象の検索結果がありません' );
+            return;
+        }
+
+        let targets = [];
+        if( selectedOnly ){
+            let items = $( '.item_selected' );
+            if( items.length === 0 ){
+                $( '#information' ).text( '動画が選択されていません' );
+                return;
+            }
+            for( let i = 0; i < items.length; i++ ){
+                let ind = items[i].rowIndex;
+                if( this.search_result[ind] ){
+                    targets.push( this.search_result[ind] );
+                }
+            }
+        }else{
+            targets = this.search_result;
+        }
+
+        if( targets.length === 0 ) return;
+
+        $( '#information' ).text( `動画DBに追加中... (${targets.length}件)` );
+        try{
+            await this.db.videodb.bulkPut( targets );
+            $( '#information' ).text( `${targets.length}件を動画DBに追加・更新しました` );
+
+            // テーブル上のバッジを更新
+            let targetIds = new Set( targets.map( v => v.video_id ) );
+            let rows = $( '#tbl-result tr' );
+            for( let i = 0; i < rows.length; i++ ){
+                if( this.search_result[i] && targetIds.has( this.search_result[i].video_id ) ){
+                    let titleElem = rows[i].querySelector( '.video-title' );
+                    if( titleElem && !titleElem.querySelector( '.badge-db-exist' ) ){
+                        let badge = document.createElement( 'span' );
+                        badge.className = 'badge-db-exist';
+                        badge.textContent = 'DB済';
+                        titleElem.insertBefore( badge, titleElem.firstChild );
+                    }
+                }
+            }
+        }catch( e ){
+            console.error( 'Failed to bulkPut to videodb:', e );
+            $( '#information' ).text( '動画DBへの追加に失敗しました' );
+        }
+    },
+
+    /**
      * 検索条件を追加
      */
     addCondLine: function(){
@@ -425,6 +622,10 @@ var VideoDB = {
         console.log( key );
 
         switch( key ){
+        case 'add_db':
+            this.addSnapshotResultToDB( true );
+            break;
+
         case 'copy_vid':
             this.copyToClipboard( 0 );
             break;
@@ -535,6 +736,7 @@ var VideoDB = {
                         VideoDB.contextMenu( key, options );
                     },
                     items: {
+                        "add_db": {name: "選択した動画を動画DBに追加"},
                         "copy": {
                             name: "選択した動画をコピー",
                             items: {
@@ -595,6 +797,19 @@ var VideoDB = {
         $( '#db-result' ).on( 'drop', ( ev ) =>{
             ev.preventDefault();
             this.dropFile( ev.originalEvent );
+        } );
+
+        // スナップショット検索イベント
+        $( '#btn-snapshot-search' ).on( 'click', ( ev ) =>{
+            this.searchSnapshot();
+        } );
+        $( '#snapshot-query' ).on( 'keydown', ( ev ) =>{
+            if( ev.which === 13 || ev.keyCode === 13 ){
+                this.searchSnapshot();
+            }
+        } );
+        $( '#btn-snapshot-add-all-db' ).on( 'click', ( ev ) =>{
+            this.addSnapshotResultToDB( false );
         } );
 
     }

@@ -76,6 +76,7 @@ let g_vinfo_defvalue = [
 
 
 function InitTwitterUI(){
+    if( typeof Twitter === 'undefined' ) return;
     // 認証済みのスクリーン名
     if( Twitter.getScreenName() ){
         $( '#twitter-screen-name' ).text( "@" + Twitter.getScreenName() );
@@ -172,14 +173,18 @@ async function LoadOptions(){
     $( '#twitter-screen-name' ).text( config['twitter-screen-name'] );
     /* Twitter認証 */
     $( '#btn-twitter-get-pin' ).on( 'click', ( ev ) => {
-        Twitter.getRequestToken();
+        if( typeof Twitter !== 'undefined' ){
+            Twitter.getRequestToken();
+        }
     } );
     $( '#btn-twitter-auth' ).on( 'click', async ( ev ) => {
-        let pin = $( '#txt-twitter-pin' ).val();
-        let result = await Twitter.getAccessToken( pin );
-        $( '#twitter-screen-name' ).text( `@${result['screen_name']}` );
-        $( '#oauth-token' ).val( result['oauth_token'] );
-        $( '#oauth-secret-token' ).val( result['oauth_token_secret'] );
+        if( typeof Twitter !== 'undefined' ){
+            let pin = $( '#txt-twitter-pin' ).val();
+            let result = await Twitter.getAccessToken( pin );
+            $( '#twitter-screen-name' ).text( `@${result['screen_name']}` );
+            $( '#oauth-token' ).val( result['oauth_token'] );
+            $( '#oauth-secret-token' ).val( result['oauth_token_secret'] );
+        }
     } );
 
 

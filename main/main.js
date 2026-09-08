@@ -438,7 +438,7 @@ var NicoLiveHelper = {
                     let next = parseInt( this.currentVideo.length_ms / 1000 + Config['autoplay-interval'] );
                     this.setNextPlayTimer( next );
 
-                    if( Config['tweet-on-play'] ){
+                    if( Config['tweet-on-play'] && typeof Twitter !== 'undefined' ){
                         let str = this.replaceMacros( Config['tweet-text'], this.currentVideo );
                         Twitter.updateStatus( str );
                     }
@@ -2268,7 +2268,9 @@ var NicoLiveHelper = {
             if( changes.config ){
                 MergeSimpleObject( Config, changes.config.newValue );
                 console.log( Config );
-                Twitter.init(); // 認証トークンをConfigから読ませるために
+                if( typeof Twitter !== 'undefined' ){
+                    Twitter.init(); // 認証トークンをConfigから読ませるために
+                }
                 NicoLiveRequest.loadNGVideo();
                 this.updatePNameWhitelist();
             }
@@ -2298,7 +2300,9 @@ var NicoLiveHelper = {
 
         DB.initDB();
         Talker.init();
-        Twitter.init();
+        if( typeof Twitter !== 'undefined' ){
+            Twitter.init();
+        }
         NicoLiveMylist.init();
         NicoLiveRequest.init();
         NicoLiveStock.init();

@@ -75,5 +75,15 @@ var Config = {
     'do-speech-caster-comment': false,
     'webspeech-select-voice': 0,
     'webspeech-volume': 1.0,
-    'webspeech-speed': 1.0
+    'webspeech-speed': 1.0,
+
+    'tag-search-tag': '',
+    'tag-search-targets': 'tagsExact',
+    'tag-search-sort': '-startTime',
+    'tag-search-limit': 10,
+    'tag-search-auto-add': false,
+    'tag-search-auto-trigger': 'stock-low',
+    'tag-search-stock-threshold': 3,
+    'tag-search-auto-interval': 15,
+    'tag-search-prevent-duplicate': true
 };

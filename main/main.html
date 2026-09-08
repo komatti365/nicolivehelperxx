@@ -38,6 +38,7 @@
   <script src="history.js"></script>
   <script src="request.js"></script>
   <script src="stock.js"></script>
+  <script src="tagsearch.js"></script>
   <script src="comment.js"></script>
   <script src="main.js"></script>
 
@@ -247,7 +248,7 @@
                     class="glyphicon glyphicon-trash"></span> ストックを全て削除</a>
           </div>
         </div>
-        <div class="btn-group" title="マイリストから動画を追加します。">
+        <div class="btn-group" title="マイリスト/シリーズから動画を追加します。">
           <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle" style="margin-right:2px;"
                   data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             マイリスト
@@ -257,8 +258,21 @@
             <div class="dropdown-divider"></div>
           </div>
         </div>
+        <div class="btn-group" title="指定タグの動画を追加します。">
+          <button id="btn-tag-search-add" type="button" class="btn btn-outline-primary btn-sm">
+            タグ追加
+          </button>
+          <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle dropdown-toggle-split" style="margin-right:2px;"
+                  data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <span class="sr-only">Toggle Dropdown</span>
+          </button>
+          <div class="dropdown-menu">
+            <a id="menu-tag-search-exec" class="dropdown-item" href="#">設定タグで追加</a>
+            <a id="menu-tag-search-prompt" class="dropdown-item" href="#">タグを指定して追加...</a>
+          </div>
+        </div>
         <div class="input-group input-group-sm" style="flex:1;">
-          <input id="input-stock-video" type="text" class="form-control" placeholder="動画ID または mylist/xxx..."
+          <input id="input-stock-video" type="text" class="form-control" placeholder="動画ID または mylist/xxx または series/xxx..."
                  aria-describedby="basic-addon1">
           <span class="input-group-btn">
             <button id="btn-add-stock" class="btn btn-sm btn-outline-primary" type="button">追加</button>

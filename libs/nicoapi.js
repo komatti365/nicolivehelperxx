@@ -270,6 +270,88 @@ var NicoApi = {
 
     getUserMylistPageApiToken: function( postfunc ){
         this.callApi( this.base_uri + "my/mylist", postfunc );
+    },
+
+    /**
+     * ログイン中のユーザー情報を取得する
+     * @param postfunc
+     */
+    getMyInfo: function( postfunc ){
+        let url = "https://nvapi.nicovideo.jp/v1/users/me";
+        this.callApi( url, postfunc, null, this.nicoapi_header );
+    },
+
+    /**
+     * 指定ユーザーのシリーズ一覧を取得する
+     * @param user_id
+     * @param postfunc
+     */
+    getUserSeries: function( user_id, postfunc ){
+        let url = `https://nvapi.nicovideo.jp/v1/users/${user_id}/series?pageSize=100`;
+        this.callApi( url, postfunc, null, this.nicoapi_header );
+    },
+
+    /**
+     * 自身のシリーズ一覧を取得する
+     * @param postfunc
+     */
+    getMySeries: function( postfunc ){
+        let self = this;
+        // まずusers/meでuserIdを取得
+        this.getMyInfo( function( xml, req ){
+            if( req && req.status == 200 ){
+                try{
+                    let res = JSON.parse( req.responseText );
+                    let userId = (res.data && (res.data.id || res.data.userId));
+                    if( userId ){
+                        self.getUserSeries( userId, postfunc );
+                        return;
+                    }
+                }catch( e ){
+                    console.error( e );
+                }
+            }
+            // フォールバック: 直接users/me/seriesを試行
+            let fallbackUrl = "https://nvapi.nicovideo.jp/v1/users/me/series?pageSize=100";
+            self.callApi( fallbackUrl, postfunc, null, self.nicoapi_header );
+        } );
+    },
+
+    /**
+     * シリーズに含まれる動画一覧を取得する
+     * @param series_id
+     * @param postfunc
+     */
+    getSeries: function( series_id, postfunc ){
+        let url = `https://nvapi.nicovideo.jp/v2/series/${series_id}?pageSize=500`;
+        this.callApi( url, postfunc, null, this.nicoapi_header );
+    },
+
+    /**
+     * スナップショット検索API v2によるタグ検索
+     * @param {string} tag 検索タグ
+     * @param {object} options オプション (targets, sort, limit, context)
+     * @param {function} postfunc コールバック関数 (xml, req)
+     */
+    snapshotSearch: function( tag, options, postfunc ){
+        options = options || {};
+        let targets = options.targets || 'tagsExact';
+        let sort = options.sort || '-startTime';
+        let limit = Math.min( Math.max( parseInt( options.limit ) || 10, 1 ), 100 );
+        let context = options.context || 'NicoLiveHelperX';
+        let fields = 'contentId,title,description,tags,categoryTags,viewCounter,mylistCounter,commentCounter,startTime,thumbnailUrl,lengthSeconds';
+
+        let params = [
+            'q=' + encodeURIComponent( tag ),
+            'targets=' + encodeURIComponent( targets ),
+            'fields=' + encodeURIComponent( fields ),
+            '_sort=' + encodeURIComponent( sort ),
+            '_limit=' + limit,
+            '_context=' + encodeURIComponent( context )
+        ];
+
+        let url = 'https://snapshot.search.nicovideo.jp/api/v2/snapshot/video/contents/search?' + params.join( '&' );
+        this.callApi( url, postfunc );
     }
 };
 

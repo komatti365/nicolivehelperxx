@@ -31,6 +31,7 @@ function SetStatusBarText( str ){
 // TODO XUL向けコードをいろいろ修正する
 let MyListManager = {
     mylists: null,    // マイリスト一覧
+    series: [],       // シリーズ一覧
     mylistdata: {}, // マイリストの内容(key=マイリストID or default)
 
     apitoken: "",   // トークンが必要なAPI用
@@ -168,7 +169,8 @@ let MyListManager = {
         $( elem.querySelector( '.video-title' ) ).text( `${item.video.id} ${item.video.title}` );
         $( elem.querySelector( '.open-page' ) ).attr( 'href', `http://www.nicovideo.jp/watch/${item.video.id}` );
 
-        details.appendChild( document.createTextNode( "投稿:" + posteddate + " (登録:" + item.addedAt + ") 時間:" + (min + ":" + (sec < 10 ? ("0" + sec) : sec)) ) );
+        let addedAtStr = item.addedAt ? " (登録:" + item.addedAt + ")" : "";
+        details.appendChild( document.createTextNode( "投稿:" + posteddate + addedAtStr + " 時間:" + (min + ":" + (sec < 10 ? ("0" + sec) : sec)) ) );
         details.appendChild( document.createElement( 'br' ) );
         details.appendChild( document.createTextNode( "再生:" + FormatCommas( item.video.count.view )
             + " コメント:" + FormatCommas( item.video.count.comment )
@@ -265,6 +267,12 @@ let MyListManager = {
     },
 
     loadMyList: function( id, name ){
+        if( id && id.startsWith( 'series_' ) ){
+            let seriesId = id.replace( 'series_', '' );
+            this.loadSeries( seriesId, name );
+            return;
+        }
+
         $( '#message' ).text( name + 'を取得しています...' );
 
         debugprint( 'load mylist(id=' + id + ')' );
@@ -284,31 +292,76 @@ let MyListManager = {
         }
     },
 
-    getMylistGroup: function(){
-        // とりマイは常に登録が新しい順
-        /*
-         MyListManager.mylists.mylistgroup[0]
-         id: 29392484
-         user_id: 14369164
-         name: 2011年ボカロ曲10選
-         description: 今年は修論執筆、再就職、長距離通勤でフルタイムの仕事とかそんな感じであまり聴いてないと思っていたらなんだかんだで2000曲近くは聴いたらしい。
-10選するには前年に比べて聴き込みが足りないのでアレげだけど、こんな感じで何卒何卒。
-         2011/12/11
-         public: 1
-         default_sort: 7
-         create_time: 1323593815
-         update_time: 1323958659
-         sort_order: 5
-         icon_id: 7
-         */
+    loadSeries: function( id, name ){
+        $( '#message' ).text( name + 'を取得しています...' );
+        debugprint( 'load series(id=' + id + ')' );
+        let f = function( xml, req ){
+            if( req.readyState == 4 ){
+                $( '#message' ).text( '' );
+                if( req.status == 200 ){
+                    MyListManager.parseSeries( id, name, req.responseText );
+                }
+            }
+        };
+        NicoApi.getSeries( id, f );
+    },
 
+    parseSeries: function( id, name, json ){
+        let key = "_series_" + id;
+        this.mylistdata[key] = JSON.parse( json );
+        let seriesObj = this.mylistdata[key];
+
+        if( seriesObj.meta && seriesObj.meta.status != 200 ){
+            $( '#message' ).text( (seriesObj.error && seriesObj.error.description) || 'シリーズの取得に失敗しました' );
+            return;
+        }
+
+        let items = (seriesObj.data && seriesObj.data.items) || [];
+        seriesObj.data.mylist = { items: items };
+
+        $( '#mylist-num' ).text( `${items.length} 件` );
+
+        let folder_listbox = $( '#folder-item-listbox' );
+        folder_listbox.empty();
+
+        for( let i = 0, item; item = items[i]; i++ ){
+            let listitem = this.createListItemElement( item );
+            folder_listbox.append( listitem );
+        }
+    },
+
+    getMylistGroup: function(){
         let folder = $( '#mylist' );
         let elem = document.createElement( 'option' );
-        $( elem ).text( 'あとで見る' )
+        $( elem ).text( 'あとで見る' );
         $( elem ).attr( 'value', 'default' );
         folder.append( elem );
 
-        $( '#message' ).text( "マイリストを取得しています..." );
+        $( '#message' ).text( "マイリスト・シリーズを取得しています..." );
+
+        let fSeries = function( xml, req ){
+            if( req.readyState == 4 && req.status == 200 ){
+                try{
+                    let res = JSON.parse( req.responseText );
+                    if( res && res.data && Array.isArray( res.data.items ) && res.data.items.length > 0 ){
+                        MyListManager.series = res.data.items;
+                        let folder = $( '#mylist' );
+                        let optgroup = document.createElement( 'optgroup' );
+                        optgroup.setAttribute( 'label', 'シリーズ' );
+                        for( let i = 0, s; s = res.data.items[i]; i++ ){
+                            let elem = document.createElement( 'option' );
+                            let countStr = s.itemsCount != null ? ` (${s.itemsCount})` : '';
+                            $( elem ).text( s.title + countStr );
+                            $( elem ).attr( 'value', 'series_' + s.id );
+                            optgroup.appendChild( elem );
+                        }
+                        folder.append( optgroup );
+                    }
+                }catch( x ){
+                    console.error( 'Failed to load series in MyListManager:', x );
+                }
+            }
+        };
 
         let f = function( xml, req ){
             if( req.readyState == 4 ){
@@ -323,13 +376,17 @@ let MyListManager = {
                     }
 
                     let folder = $( '#mylist' );
+                    let optgroup = document.createElement( 'optgroup' );
+                    optgroup.setAttribute( 'label', 'マイリスト' );
                     for( let i = 0, grp; grp = MyListManager.mylists.data.mylists[i]; i++ ){
                         let elem = document.createElement( 'option' );
                         $( elem ).text( grp.name );
                         $( elem ).attr( 'value', grp.id );
-                        folder.append( elem );
+                        optgroup.appendChild( elem );
                     }
+                    folder.append( optgroup );
                 }
+                NicoApi.getMySeries( fSeries );
             }
         };
         NicoApi.getmylistgroup( f );

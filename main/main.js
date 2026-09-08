@@ -2305,6 +2305,7 @@ var NicoLiveHelper = {
         NicoLiveComment.init();
         NicoLiveHistory.init();
         UserManage.init();
+        NicoLiveTagSearch.init();
 
         if( lvid ){
             // 放送IDが渡されたら放送に接続する

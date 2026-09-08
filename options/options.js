@@ -199,6 +199,17 @@ async function LoadOptions(){
     LoadValue( 'webspeech-select-voice', config, Config['webspeech-select-voice'] );
     LoadValue( 'webspeech-volume', config, Config['webspeech-volume'] );
     LoadValue( 'webspeech-speed', config, Config['webspeech-speed'] );
+
+    /* 指定タグ動画追加 */
+    LoadValue( 'tag-search-tag', config, Config['tag-search-tag'] );
+    LoadValue( 'tag-search-targets', config, Config['tag-search-targets'] );
+    LoadValue( 'tag-search-sort', config, Config['tag-search-sort'] );
+    LoadValue( 'tag-search-limit', config, Config['tag-search-limit'] );
+    LoadBool( 'tag-search-prevent-duplicate', config, Config['tag-search-prevent-duplicate'] );
+    LoadBool( 'tag-search-auto-add', config, Config['tag-search-auto-add'] );
+    LoadValue( 'tag-search-auto-trigger', config, Config['tag-search-auto-trigger'] );
+    LoadValue( 'tag-search-stock-threshold', config, Config['tag-search-stock-threshold'] );
+    LoadValue( 'tag-search-auto-interval', config, Config['tag-search-auto-interval'] );
 }
 
 function SaveOptions( ev ){
@@ -266,6 +277,17 @@ function SaveOptions( ev ){
     SaveValue( 'webspeech-select-voice', config );
     SaveNumber( 'webspeech-volume', config );
     SaveNumber( 'webspeech-speed', config );
+
+    /* 指定タグ動画追加 */
+    SaveValue( 'tag-search-tag', config );
+    SaveValue( 'tag-search-targets', config );
+    SaveValue( 'tag-search-sort', config );
+    SaveInt( 'tag-search-limit', config );
+    SaveBool( 'tag-search-prevent-duplicate', config );
+    SaveBool( 'tag-search-auto-add', config );
+    SaveValue( 'tag-search-auto-trigger', config );
+    SaveInt( 'tag-search-stock-threshold', config );
+    SaveInt( 'tag-search-auto-interval', config );
 
     browser.storage.local.set( {
         'config': config

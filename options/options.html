@@ -241,6 +241,58 @@
     </div>
   </fieldset>
 
+  <fieldset>
+    <legend>指定タグ動画追加 (スナップショットAPI)</legend>
+    <div>
+      <label for="tag-search-tag">指定タグ:</label>
+      <input id="tag-search-tag" type="text" style="width:20em;" placeholder="例: VOCALOID">
+    </div>
+    <div style="margin-top:4px;">
+      <label for="tag-search-targets">検索対象:</label>
+      <select id="tag-search-targets">
+        <option value="tagsExact">タグ (完全一致)</option>
+        <option value="tags">タグ (部分一致)</option>
+      </select>
+    </div>
+    <div style="margin-top:4px;">
+      <label for="tag-search-sort">ソート順:</label>
+      <select id="tag-search-sort">
+        <option value="-startTime">投稿日時が新しい順</option>
+        <option value="+startTime">投稿日時が古い順</option>
+        <option value="-viewCounter">再生数が多い順</option>
+        <option value="-mylistCounter">マイリスト数が多い順</option>
+        <option value="-commentCounter">コメント数が多い順</option>
+      </select>
+    </div>
+    <div style="margin-top:4px;">
+      <label for="tag-search-limit">1回の取得件数:</label>
+      <input id="tag-search-limit" type="number" min="1" max="100" value="10" style="width:4em;">件
+    </div>
+    <div style="margin-top:4px;">
+      <label><input type="checkbox" id="tag-search-prevent-duplicate">ストック中および再生履歴にある動画を除外する</label>
+    </div>
+    <hr>
+    <div>
+      <label><input type="checkbox" id="tag-search-auto-add">指定タグ動画の自動追加を有効にする</label>
+    </div>
+    <div style="margin-top:4px;">
+      <label for="tag-search-auto-trigger">自動追加トリガー:</label>
+      <select id="tag-search-auto-trigger">
+        <option value="stock-low">ストック残数が少なくなった時</option>
+        <option value="interval">一定間隔 (タイマー)</option>
+        <option value="both">ストック残数減少 または タイマー</option>
+      </select>
+    </div>
+    <div style="margin-top:4px;">
+      <label for="tag-search-stock-threshold">ストック残数閾値:</label>
+      <input id="tag-search-stock-threshold" type="number" min="0" max="50" value="3" style="width:4em;">件以下になったとき
+    </div>
+    <div style="margin-top:4px;">
+      <label for="tag-search-auto-interval">タイマー間隔:</label>
+      <input id="tag-search-auto-interval" type="number" min="1" max="120" value="15" style="width:4em;">分ごと
+    </div>
+  </fieldset>
+
 </div>
 
 </body>

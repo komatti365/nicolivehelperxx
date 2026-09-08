@@ -98,6 +98,10 @@ var NicoLiveStock = {
             let btn = row.querySelector( '.btn-nico-details' );
             btn.setAttribute( 'data-target', `#nico-details-stk${i}` );
         }
+
+        if( typeof NicoLiveTagSearch !== 'undefined' && NicoLiveTagSearch.checkAutoAdd ){
+            NicoLiveTagSearch.checkAutoAdd( 'stock-low' );
+        }
     },
 
     /**
@@ -156,6 +160,17 @@ var NicoLiveStock = {
             for( let i = 0, mylist; mylist = l[i]; i++ ){
                 let id = mylist.match( /mylist\/(\d+)/ )[1];
                 let video_ids = await NicoLiveMylist.retrieveVideoIdFromRSS( id );
+                for( let v of video_ids ){
+                    this.addStock( v );
+                }
+            }
+        }
+
+        l = video_id.match( /series\/\d+/g );
+        if( l ){
+            for( let i = 0, series; series = l[i]; i++ ){
+                let id = series.match( /series\/(\d+)/ )[1];
+                let video_ids = await NicoLiveMylist.retrieveVideoIdFromSeries( id );
                 for( let v of video_ids ){
                     this.addStock( v );
                 }
@@ -269,6 +284,20 @@ var NicoLiveStock = {
             }
         };
         NicoApi.getMylist( mylist_id, f );
+    },
+
+    /**
+     * シリーズからストックに追加する.
+     * @param series_id シリーズのID
+     */
+    addStockFromSeries: async function( series_id ){
+        console.log( `シリーズ${series_id}をストックに追加します。` );
+        let video_ids = await NicoLiveMylist.retrieveVideoIdFromSeries( series_id );
+        if( video_ids && video_ids.length > 0 ){
+            this.addStocks( video_ids.join( ' ' ) );
+        }else{
+            NicoLiveHelper.showAlert( 'シリーズの動画を取得できませんでした。' );
+        }
     },
 
     loadStocks: async function(){
@@ -744,10 +773,13 @@ var NicoLiveStock = {
             localStorage.setItem( 'stock-setno', $( '#sel-stock-set' ).val() * 1 );
         } );
 
-        //--- マイリスト読み込み
+        //--- マイリスト・シリーズ読み込み
         $( '#menu-stock-mylist' ).on( 'click', ( ev ) => {
             let target = $( ev.target ).attr( "nico_grp_id" );
-            if( target != undefined ){
+            let seriesId = $( ev.target ).attr( "nico_series_id" );
+            if( seriesId != undefined ){
+                this.addStockFromSeries( seriesId );
+            }else if( target != undefined ){
                 this.addStockFromMylist( target );
             }
         } );

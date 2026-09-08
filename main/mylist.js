@@ -22,8 +22,43 @@
 
 var NicoLiveMylist = {
     mylists: [],            // マイリストグループ
+    series: [],             // シリーズ一覧
     mylist_itemdata: {},    // 動画のマイリスト登録日とマイリストコメント
 
+    /**
+     * 指定のシリーズ内の動画IDリストを取得.
+     * @param series_id
+     * @returns {Promise<Array>}
+     */
+    retrieveVideoIdFromSeries: async function( series_id ){
+        let p = new Promise( ( resolve, reject ) => {
+            let f = ( xml, req ) => {
+                if( req.readyState == 4 ){
+                    if( req.status == 200 ){
+                        try{
+                            let res = JSON.parse( req.responseText );
+                            let items = (res.data && res.data.items) || [];
+                            let videos = [];
+                            for( let item of items ){
+                                let video_id = (item.video && item.video.id) || item.id;
+                                if( video_id ){
+                                    videos.push( video_id );
+                                }
+                            }
+                            resolve( videos );
+                        }catch( x ){
+                            console.error( x );
+                            resolve( [] );
+                        }
+                    }else{
+                        resolve( [] );
+                    }
+                }
+            };
+            NicoApi.getSeries( series_id, f );
+        } );
+        return p;
+    },
 
     /**
      * 指定のマイリスト内の動画IDリストを取得.
@@ -204,33 +239,88 @@ var NicoLiveMylist = {
     processMylistGroup: function(){
         // ストックのマイリストメニューに項目を追加
         let menu = $( '#menu-stock-mylist' );
-        for( let i = 0, grp; grp = NicoLiveMylist.mylists.data.mylists[i]; i++ ){
-            let a = document.createElement( 'a' );
-            a.setAttribute( 'class', 'dropdown-item' );
-            a.setAttribute( 'href', '#' );
-            a.setAttribute( 'nico_grp_id', grp.id );
-            a.appendChild( document.createTextNode( grp.name ) );
-            menu.append( a );
+        menu.empty();
+
+        let aDef = document.createElement( 'a' );
+        aDef.setAttribute( 'class', 'dropdown-item' );
+        aDef.setAttribute( 'href', '#' );
+        aDef.setAttribute( 'nico_grp_id', 'deflist' );
+        aDef.appendChild( document.createTextNode( 'あとで見る' ) );
+        menu.append( aDef );
+        menu.append( '<div class="dropdown-divider"></div>' );
+
+        // マイリスト一覧
+        if( NicoLiveMylist.mylists && NicoLiveMylist.mylists.data && NicoLiveMylist.mylists.data.mylists ){
+            let header = document.createElement( 'h6' );
+            header.setAttribute( 'class', 'dropdown-header' );
+            header.appendChild( document.createTextNode( 'マイリスト' ) );
+            menu.append( header );
+
+            for( let i = 0, grp; grp = NicoLiveMylist.mylists.data.mylists[i]; i++ ){
+                let a = document.createElement( 'a' );
+                a.setAttribute( 'class', 'dropdown-item' );
+                a.setAttribute( 'href', '#' );
+                a.setAttribute( 'nico_grp_id', grp.id );
+                a.appendChild( document.createTextNode( grp.name ) );
+                menu.append( a );
+            }
         }
+
+        // シリーズ一覧
+        if( NicoLiveMylist.series && NicoLiveMylist.series.length > 0 ){
+            menu.append( '<div class="dropdown-divider"></div>' );
+            let header = document.createElement( 'h6' );
+            header.setAttribute( 'class', 'dropdown-header' );
+            header.appendChild( document.createTextNode( 'シリーズ' ) );
+            menu.append( header );
+
+            for( let i = 0, s; s = NicoLiveMylist.series[i]; i++ ){
+                let a = document.createElement( 'a' );
+                a.setAttribute( 'class', 'dropdown-item' );
+                a.setAttribute( 'href', '#' );
+                a.setAttribute( 'nico_series_id', s.id );
+                let countStr = s.itemsCount != null ? ` (${s.itemsCount})` : '';
+                a.appendChild( document.createTextNode( s.title + countStr ) );
+                menu.append( a );
+            }
+        }
+    },
+
+    loadSeries: function(){
+        let f = function( xml, req ){
+            if( req.readyState == 4 && req.status == 200 ){
+                try{
+                    let res = JSON.parse( req.responseText );
+                    if( res && res.data && Array.isArray( res.data.items ) ){
+                        NicoLiveMylist.series = res.data.items;
+                        NicoLiveMylist.processMylistGroup();
+                    }
+                }catch( x ){
+                    console.error( 'Failed to load series:', x );
+                }
+            }
+        };
+        NicoApi.getMySeries( f );
     },
 
     /**
      * マイリストグループを取得してドロップダウンメニューに追加する
      */
     loadMylist: function(){
+        this.loadSeries();
         let f = function( xml, req ){
             if( req.readyState == 4 && req.status == 200 ){
                 try{
                     NicoLiveMylist.mylists = JSON.parse( req.responseText );
                     NicoLiveMylist.processMylistGroup();
                 }catch( x ){
-                    if( NicoLiveMylist.mylists.status == 'fail' ){
+                    if( NicoLiveMylist.mylists && NicoLiveMylist.mylists.status == 'fail' ){
                         NicoLiveHelper.showAlert( NicoLiveMylist.mylists.error.description );
                     }
                     return;
                 }
 
-                if( NicoLiveMylist.mylists.status == 'fail' ){
+                if( NicoLiveMylist.mylists && NicoLiveMylist.mylists.status == 'fail' ){
                     NicoLiveHelper.showAlert( NicoLiveMylist.mylists.error.description );
                     return;
                 }
